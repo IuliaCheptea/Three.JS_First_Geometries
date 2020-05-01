@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+
+      canvas {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <script src="js/three.js"></script>
+    <script src="js/GLTFLoader.js"></script>
+
+    <script src="js/OrbitControls.js"></script>
+    <script src="js/threex.domevents.js"></script>
+
+    <script>
+      var scene = new THREE.Scene();
+      var clientHeight = window.innerHeight;
+      var clientWidth = window.innerWidth;
+      var camera = new THREE.PerspectiveCamera(
+        75,
+        clientWidth / clientHeight,
+        1,
+        100
+      );
+
+      //45, same, 1, 100
+
+      var renderer = new THREE.WebGLRenderer({
+        antialias: true
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(clientWidth, clientHeight);
+      document.body.appendChild(renderer.domElement);
+
+      var texture = new THREE.ImageUtils.loadTexture("oh_text.jpg");
+
+      const initializeMesh = (
+        index,
+        radius,
+        widthSegments,
+        heightSegments,
+        positionX
+      ) => {
+        const geometry = new THREE.SphereGeometry(
+          radius,
+          widthSegments,
+          heightSegments
+        );
+        const material = new THREE.MeshNormalMaterial({
+          wireframe: true
+        });
+        const sphere = new THREE.Mesh(geometry, material);
+        sphere.position.x = positionX;
+        sphere.name = "sphere" + index;
+        scene.add(sphere);
+        return sphere;
+      };
+
+      var meshes = [];
+      const total = 5;
+      const sphere1 = initializeMesh(1, 7, 20, 8, 0);
+      const sphere2 = initializeMesh(2, 13, 2, 90, 40);
+      const sphere3 = initializeMesh(3, 13, 2, 90, -40);
+      const sphere4 = initializeMesh(4, 5, 3, 3, 80);
+      const sphere5 = initializeMesh(5, 5, 3, 3, -80);
+      for (i = 1; i <= total; i++)
+        meshes[i] = currentSphere = scene.getObjectByName("sphere" + i);
+
+      camera.position.z = 80;
+
+      const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+
+      let sphereClicked = false;
+
+      const setEvent = (sphere, i) => {
+        var audioLoader = new THREE.AudioLoader();
+        var sound = new THREE.PositionalAudio(listener);
+        audioLoader.load("sounds/" + i + ".mp3", function(buffer) {
+          sound.setBuffer(buffer);
+          sound.setLoop(true);
+          sound.setVolume(1);
+        });
+        domEvents.addEventListener(sphere, "mouseover", event => {
+          sphere.scale.set(-0.7, -0.7, -0.7);
+          sphere.add(sound);
+          sound.play();
+          removeEvent(sphere, sound);
+        });
+        domEvents.addEventListener(sphere, "click", event => {});
+      };
+
+      const removeEvent = (sphere, sound) => {
+        domEvents.addEventListener(sphere, "mouseout", events => {
+          sphere.scale.set(1, 1, 1);
+          sphere.remove(sound);
+          sound.stop();
+        });
+      };
+
+      var listener = new THREE.AudioListener();
+      camera.add(listener);
+
+      for (i = 1; i <= 5; i++) {
+        currentSphere = scene.getObjectByName("sphere" + i);
+        setEvent(currentSphere, i);
+      }
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.minDistance = 1;
+      controls.maxDistance = 1000;
+
+      var rotate = true;
+      var sphereToStop = null;
+
+      const cancelAnimationFrame = (id, sphereToStop) => {
+        sphereToStop.rotation.x = 0;
+        sphereToStop.rotation.y = 0;
+      };
+
+      /*to be used on click for displaying a new element instead of the clicked one*/
+      /*renderer.render(scene, camera)
+
+        let date = new Date();
+
+        console.log(date);
+        setTimeout(function() {
+            console.log('after timeout ' + new Date());
+            let toRemove = scene.getObjectByName('sphere4');
+            scene.remove(toRemove);
+            renderer.render(scene, camera);
+        }, 2000)
+
+        setTimeout(() => {
+            console.log('after second timeout ' + new Date());
+            scene.add(sphere4);
+            renderer.render(scene, camera);
+        }, 4000)*/
+
+      var loader = new THREE.FontLoader();
+
+      loader.load("fonts/helvetiker_regular.typeface.json", function(font) {
+        var geometry = new THREE.TextGeometry("DEEP SPACE", {
+          font: font,
+          size: 5,
+          color: "0xffffff",
+          height: 3
+          //curveSegments: 12,
+          //bevelEnabled: true,
+          //bevelThickness: 10,
+          //bevelSize: 1,
+          //bevelOffset: 0,
+          //bevelSegments: 5
+        });
+
+        const material = new THREE.MeshNormalMaterial({
+          wireframe: false
+        });
+        const geometryMesh = new THREE.Mesh(geometry, material);
+        geometryMesh.position.x = -20;
+        geometryMesh.position.y = 30;
+        scene.add(geometryMesh);
+      });
+
+      var loader = new THREE.GLTFLoader();
+
+      loader.load(
+        "model/dragonfly/scene.gltf",
+        function(gltf) {
+          console.log(gltf);
+          scene.add(gltf.scene);
+          loader.parse(JSON.stringify(gltf.animations[0]));
+        },
+        undefined,
+        function(error) {
+          console.error(error);
+        }
+      );
+
+      const animate = () => {
+        const id = requestAnimationFrame(animate);
+        for (i = 1; i <= 5; i++) {
+          meshes[i].rotation.x += 0.02;
+          meshes[i].rotation.y += 0.02;
+        }
+
+        controls.update();
+        renderer.render(scene, camera);
+      };
+
+      animate();
+    </script>
+  </body>
+</html>
